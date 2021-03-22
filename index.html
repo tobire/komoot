@@ -5,14 +5,16 @@
     <meta charset="UTF-8">
     <style>
       html, body {
-        height: 100%;
+        height: 95%;
+        overflow-y: hidden;
       }
 
       #map {
         height: 100%;
         display: flex;
-        justify-content: center;
+        justify-content: space-between;
         align-items: center;
+        flex-direction: column;
       }
 
       .region-border {
@@ -752,6 +754,8 @@
 
         </g>
       </svg>
+
+      <button onclick="exportToUrl();">Export to URL</button>
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/js-cookie@2.2.1/src/js.cookie.js"></script>
@@ -793,7 +797,14 @@
       }
 
       function loadActiveRegions() {
-        activeRegions = Cookies.get('activeRegions');
+        var searchParams = new URLSearchParams(window.location.search);
+        if (searchParams.has('regions')) {
+          activeRegions = searchParams.get('regions');
+          saveActiveRegions();
+        } else {
+          activeRegions = Cookies.get('activeRegions');
+        }
+
         if (activeRegions === undefined)
           activeRegions = '';
         for (var i = 0; i < activeRegions.length; i++)
@@ -801,9 +812,17 @@
             $('svg g[data-uid="' + i + '"]').addClass('active');
       }
 
+      function exportToUrl() {
+        var url = window.location.href;
+        if (url.includes('?'))
+          url = url.substring(0, url.indexOf('?'))
+        var newUrl = url + '?regions=' + activeRegions;
+        history.pushState({}, null, newUrl);
+      }
+
       function resizeRegions() {
         $("svg").hide();
-        var height = $(document).height() * 0.9;
+        var height = $(document).height() * 0.8;
         $("svg").show();
 
         var svg = $('svg')[0];
