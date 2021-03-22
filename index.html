@@ -762,6 +762,11 @@
     <script>
       var activeRegions = '';
 
+      $(document).ready(function() {
+        if (window.navigator.userAgent.indexOf("MSIE ") > 0 || !!navigator.userAgent.match(/Trident.*rv\:11\./)) 
+          alert("For your own wellbeing, please don't use Internet Explorer")
+      });
+
       $(document).ready(resizeRegions);
       $(document).ready(loadActiveRegions);
       $(window).resize(resizeRegions);
