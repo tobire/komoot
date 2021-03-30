@@ -760,7 +760,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/js-cookie@2.2.1/src/js.cookie.js"></script>
     <script>
-      var activeRegions = '';
+      var activeRegions = [];
 
       $(document).ready(function() {
         if (window.navigator.userAgent.indexOf("MSIE ") > 0 || !!navigator.userAgent.match(/Trident.*rv\:11\./)) 
@@ -780,48 +780,54 @@
 
       function activate(id) {
         var e = $('#' + id);
-        var uid = e.data('uid');
-        if (activeRegions.length <= uid)
-          activeRegions += '0'.repeat(uid - activeRegions.length);
-        activeRegions = activeRegions.substring(0, uid) + '1' + activeRegions.substring(uid + 1)
+        var uid = parseInt(e.data('uid'));
+        activeRegions.push(uid);
         saveActiveRegions();
         e.addClass('active');
       }
 
       function deactivate(id) {
         var e = $('#' + id);
-        var uid = e.data('uid');
-        if (activeRegions.length >= uid)
-          activeRegions = activeRegions.substring(0, uid) + '0' + activeRegions.substring(uid + 1)
+        var uid = parseInt(e.data('uid'));
+        activeRegions.splice(activeRegions.indexOf(uid), 1);
         saveActiveRegions();
         e.removeClass('active');
       }
 
       function saveActiveRegions() {
-        Cookies.set('activeRegions', activeRegions, { expires: (100 * 365), sameSite: 'strict' });
+        console.log('saved')
+        console.log(activeRegions)
+        console.log(btoa(activeRegions))
+        Cookies.set('activeRegions', btoa(activeRegions), { expires: (100 * 365), sameSite: 'strict' });
       }
 
       function loadActiveRegions() {
         var searchParams = new URLSearchParams(window.location.search);
         if (searchParams.has('regions')) {
-          activeRegions = searchParams.get('regions');
+          loadRegions(searchParams.get('regions'));
           saveActiveRegions();
         } else {
-          activeRegions = Cookies.get('activeRegions');
+          loadRegions(Cookies.get('activeRegions'))
         }
 
-        if (activeRegions === undefined)
-          activeRegions = '';
         for (var i = 0; i < activeRegions.length; i++)
-          if (activeRegions.charAt(i) == '1')
-            $('svg g[data-uid="' + i + '"]').addClass('active');
+            $('svg g[data-uid="' + activeRegions[i] + '"]').addClass('active');
+      }
+
+      function loadRegions(base64) {
+        if (base64 !== undefined) {
+          var data = atob(base64);
+          activeRegions = data.split(',').map(Number);
+        } else {
+          activeRegions = []
+        }
       }
 
       function exportToUrl() {
         var url = window.location.href;
         if (url.includes('?'))
           url = url.substring(0, url.indexOf('?'))
-        var newUrl = url + '?regions=' + activeRegions;
+        var newUrl = url + '?regions=' + btoa(activeRegions);
         history.pushState({}, null, newUrl);
       }
 
