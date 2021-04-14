@@ -1303,9 +1303,9 @@
     }
 
     function saveActiveRegions() {
-      console.log('saved')
-      console.log(activeRegions)
-      console.log(btoa(activeRegions))
+      //console.log('saved')
+      //console.log(activeRegions)
+      //console.log(btoa(activeRegions))
       Cookies.set('activeRegions', btoa(activeRegions), { expires: (100 * 365), sameSite: 'strict' });
     }
 
