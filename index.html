@@ -42,7 +42,7 @@
 <body>
   <div class="container">
     <div class="row mb-5 mt-3">
-      <div class="col-3">
+      <div class="order-2 order-lg-1 col-12 col-lg-3">
         <ul class="list-group" style="max-height: 85vh; overflow-y: scroll;">
           <li class="list-group-item">
             <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-oestlicher-hunsrueck">
@@ -531,7 +531,7 @@
           </li>
         </ul>
       </div>
-      <div class="col-6">
+      <div class="order-1 order-lg-2 col-12 col-lg-6">
         <div id="map" class="d-flex justify-content-center">
           <svg id="regions" version="1.0" xmlns="http://www.w3.org/2000/svg" style="height: 85vh;">
             <g transform="scale(1, -1)">
@@ -1241,13 +1241,12 @@
           </svg>
         </div>
       </div>
-      <div class="col-3">
+      <div class="order-3 col-12 col-lg-3">
         rechts</div>
     </div>
     <div class="row">
       <div class="d-flex justify-content-center">
-        <button onclick="exportToUrl();">
-          Export to URL</button>
+        <button type="button" class="btn btn-primary" onclick="exportToUrl();">Export to URL</button>
       </div>
     </div>
   </div>
