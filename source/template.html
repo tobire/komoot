@@ -1,606 +1,764 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 
 <head>
   <title>Komoot Regionen</title>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗺️</text></svg>">
 
   <style>
+    :root {
+      --bg: #f4f3ee;
+      --surface: #ffffff;
+      --surface-2: #f0efe9;
+      --ink: #1f2420;
+      --muted: #6b716c;
+      --line: #e2e0d8;
+      --accent: #4f7d1f;
+      --accent-ink: #ffffff;
+      --region-border: #2b302c;
+      --germany: #e0553a;
+      --austria: #2f9e64;
+      --switzerland: #3b78d8;
+      --luxemburg: #e3a21a;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 8px 24px rgba(0, 0, 0, .06);
+      color-scheme: light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #141614;
+        --surface: #1c1f1d;
+        --surface-2: #252926;
+        --ink: #e9ebe7;
+        --muted: #9aa19b;
+        --line: #2f3430;
+        --accent: #8cc152;
+        --accent-ink: #141614;
+        --region-border: #c9cec8;
+        --germany: #f0745a;
+        --austria: #4cc184;
+        --switzerland: #6b9cf0;
+        --luxemburg: #f2bb45;
+        --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .3);
+        color-scheme: dark;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: minmax(300px, 360px) 1fr;
+      gap: 16px;
+      height: 100vh;
+      padding: 16px;
+    }
+
+    /* ---------- Sidebar ---------- */
+    .sidebar {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      min-height: 0;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .sidebar-head {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: -.01em;
+    }
+
+    .subtitle {
+      margin: 2px 0 16px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .stats {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .stats strong {
+      font-size: 28px;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+
+    .stats span {
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stats .percent {
+      margin-left: auto;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .progress {
+      display: flex;
+      height: 8px;
+      border-radius: 99px;
+      background: var(--surface-2);
+      overflow: hidden;
+    }
+
+    .progress i {
+      display: block;
+      height: 100%;
+      transition: width .25s ease;
+    }
+
+    .progress i+i {
+      box-shadow: inset 1px 0 0 var(--surface);
+    }
+
+    .search {
+      position: relative;
+      margin-top: 16px;
+    }
+
+    .search input {
+      width: 100%;
+      padding: 9px 12px 9px 34px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface-2);
+      color: var(--ink);
+      font: inherit;
+      outline: none;
+    }
+
+    .search input:focus {
+      border-color: var(--accent);
+      background: var(--surface);
+    }
+
+    .search svg {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      color: var(--muted);
+    }
+
+    .region-list {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 4px 8px 12px;
+    }
+
+    .group h2 {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      padding: 14px 12px 6px;
+      background: var(--surface);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .group h2 .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--c);
+    }
+
+    .group h2 .count {
+      margin-left: auto;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0;
+    }
+
+    .group ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .group li label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .group li label:hover,
+    .group li.hover label {
+      background: var(--surface-2);
+    }
+
+    .group input[type="checkbox"] {
+      width: 17px;
+      height: 17px;
+      margin: 0;
+      flex-shrink: 0;
+      accent-color: var(--c);
+      cursor: pointer;
+    }
+
+    .group input:checked+span {
+      font-weight: 600;
+    }
+
+    .group[hidden],
+    .group li[hidden] {
+      display: none;
+    }
+
+    .empty {
+      padding: 24px 12px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .sidebar-foot {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--ink);
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: filter .15s, background .15s;
+    }
+
+    .btn:hover {
+      background: var(--surface-2);
+    }
+
+    .btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .btn-primary {
+      flex: 1;
+      border-color: var(--accent);
+      background: var(--accent);
+      color: var(--accent-ink);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent);
+      filter: brightness(1.08);
+    }
+
+    /* ---------- Map ---------- */
+    .map {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+      min-height: 0;
+      padding: 24px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    #regions {
+      flex: 1;
+      width: 100%;
+      min-height: 0;
+      overflow: visible;
+    }
+
+    .region {
+      cursor: pointer;
+    }
+
     .region-border {
-      fill: black;
+      fill: var(--region-border);
+      opacity: .55;
+      pointer-events: none;
     }
 
     .region-fill {
-      fill-opacity: 0.1;
+      fill: var(--c);
+      fill-opacity: .1;
+      transition: fill-opacity .15s ease;
     }
 
-    .active .region-fill {
+    .region:hover .region-fill,
+    .region.hover .region-fill {
+      fill-opacity: .35;
+    }
+
+    .region.active .region-fill {
+      fill-opacity: .9;
+    }
+
+    .region.active:hover .region-fill,
+    .region.active.hover .region-fill {
       fill-opacity: 1;
     }
 
-    .germany .region-fill {
-      fill: red;
+    .germany {
+      --c: var(--germany);
     }
 
-    .austria .region-fill {
-      fill: green;
+    .austria {
+      --c: var(--austria);
     }
 
-    .switzerland .region-fill {
-      fill: blue;
+    .switzerland {
+      --c: var(--switzerland);
     }
 
-    .luxemburg .region-fill {
-      fill: yellow;
+    .luxemburg {
+      --c: var(--luxemburg);
+    }
+
+    .legend {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend span::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      background: var(--c);
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translate(-50%, 20px);
+      padding: 10px 16px;
+      border-radius: 10px;
+      background: var(--ink);
+      color: var(--bg);
+      font-weight: 600;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s, transform .2s;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    /* ---------- Mobile ---------- */
+    @media (max-width: 800px) {
+      .app {
+        grid-template-columns: minmax(0, 1fr);
+        height: auto;
+        padding: 12px;
+        gap: 12px;
+      }
+
+      .map {
+        order: -1;
+        height: 62vh;
+        padding: 12px;
+      }
+
+      .region-list {
+        overflow: visible;
+      }
+
+      .sidebar-foot {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+        padding-bottom: max(12px, env(safe-area-inset-bottom));
+        background: var(--surface);
+        border-radius: 0 0 16px 16px;
+      }
+
+      .sidebar {
+        overflow: visible;
+      }
     }
   </style>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet"
-    integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
-
 </head>
 
 <body>
-  <div class="container-lg">
-    <div class="row mt-3">
-      <div class="order-2 order-lg-1 col-6 col-lg-3">
-        <ul class="list-group border overflow-scroll" style="max-height: 95vh;">
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-oestlicher-hunsrueck">
-            Östlicher Hunsrück
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-mittlere-nordseekueste">
-            Mittlere Nordseeküste
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-taunus">
-            Taunus
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-saechsisches-elbland">
-            Sächsisches Elbland
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-westschwarzwald">
-            Westschwarzwald
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-bergisch-siegen">
-            Bergisch-Siegen
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-koelner-bucht">
-            Kölner Bucht
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-muenchner-umland">
-            Münchner Umland
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-ostschwarzwald">
-            Ostschwarzwald
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox"
-              id="checkbox-mecklenburgische-seenplatte">
-            Mecklenburgische Seenplatte
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-saarland">
-            Saarland
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-augsburger-ulmer-umland">
-            Augsburger-Ulmer Umland
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-ostbayrische-alpen">
-            Ostbayrische Alpen
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-nordhessen">
-            Nordhessen
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-rostock-guestrow-demmin">
-            Rostock-Güstrow-Demmin
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-luebecker-bucht">
-            Lübecker Bucht
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-suedschwarzwald">
-            Südschwarzwald
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox"
-              id="checkbox-noerdliches-sachsen-anhalt">
-            Nördliches Sachsen-Anhalt
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-odenwald-tauber-region">
-            Odenwald-Tauber Region
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-mittelhessen">
-            Mittelhessen
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-mittlere-saale">
-            Mittlere Saale
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-leinebergland">
-            Leinebergland
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-untere-lippe">
-            Untere Lippe
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-regensburger-donau-ebene">
-            Regensburger Donau Ebene
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-württemberger-bodensee">
-            Württemberger Bodensee
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox"
-              id="checkbox-schwaebisch-fraenkischer-wald">
-            Schwäbisch-Fränkischer Wald
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox"
-              id="checkbox-ostbraunschweigisches-flachland">
-            Ostbraunschweigisches Flachland
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-muensterland">
-            Münsterland
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-ostbrandenburg">
-            Ostbrandenburg
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-mittlere-weser-region">
-            Mittlere Weser Region
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-untere-ruhr">
-            Untere Ruhr
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-coburg-hassberge">
-            Coburg-Haßberge
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-suedpfalz">
-            Südpfalz
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-berlin-potsdam-havelland">
-            Berlin-Potsdam-Havelland
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-suedhessen">
-            Südhessen
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-suedliche-heide">
-            Südliche Heide
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-nuernberg-erlangen">
-            Nürnberg Erlangen
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-untere-saale">
-            Untere Saale
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-oberschwaben">
-            Oberschwaben
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-vorpommern">
-            Vorpommern
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox"
-              id="checkbox-oberes-haveland-ueckermark">
-            Oberes Haveland-Uckermark
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox"
-              id="checkbox-suedlicher-teutoburger-wald">
-            SÜdlicher Teutoburger Wald
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-rennsteig-region">
-            Rennsteig Region
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox"
-              id="checkbox-erding-freising-schrobenhausen">
-            Erding-Freising-Schrobenhausen
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-main-region">
-            Main-Region
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox"
-              id="checkbox-noerdlicher-teutoburger-wald">
-            Nördlicher Teutoburger-Wald
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-fuenf-seen-land">
-            Fünf-Seen-Land
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-fichtelgebirge">
-            Fichtelgebirge
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-mittelrhein">
-            Mittelrhein
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-toelzer-alpenvorland">
-            Tölzer-Alpenvorland
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-zentraleifel">
-            Zentraleifel
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-rhein-neckar-eck">
-            Rhein-Neckar-Eck
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-altmuehltal">
-            Altmühltal
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox"
-              id="checkbox-holsteinisches-binnenland">
-            Holsteinisches Binnenland
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-region-emsland">
-            Region Emsland
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-ostfriesland">
-            Ostfriesland
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-noerdliche-heide">
-            Nördliche Heide
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-erzgebirge">
-            Erzgebirge
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox"
-              id="checkbox-schleswig-holsteinische-ostsee">
-            Schleswig-Holsteinische Estsee
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-passau-inn-region">
-            Passau-Inn-Region
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-fraenkische-alb">
-            Fraenkische-Alb
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-oestliche-heide">
-            Östliche Heide
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-spreewald-niederlausitz">
-            Spreewald-Niederlausitz
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-bayrischer-wald">
-            Bayrischer Wald
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox"
-              id="checkbox-innsbrucker-garmische-alpen">
-            Innsbrucker-Garmische Alpen
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-niederrhein">
-            Niederrhein
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-harz">
-            Harz
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-nordwestsachsen">
-            Nordwestsachsen
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-schwerin-prignitz-ruppin">
-            Schwerin-Prignitz-Ruppin
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-allgaeu">
-            Allgäu
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-hochschwarzwald">
-            Hochschwarzwald
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-suedlicher-neckar">
-            Südlicher Neckar
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-wuerzburg-bad-kissingen">
-            Würzburg Bad Kissingen
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox"
-              id="checkbox-schleswig-holsteinische-nordsee">
-            Schleswig-Holsteinische Nordsee
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-westlicher-hunsrueck">
-            Westlicher Hunsrück
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-mittleres-thueringen">
-            Mittleres Thüringen
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-bremer-hinterland">
-            Bremer Hinterland
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-frankenwald">
-            Frankenwald
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-schwaebische-alb">
-            Schwaebische Alb
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-ostschwaben">
-            Ostschwaben
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-elbe-elster-flaeming">
-            Elbe-Elster-Fläming
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-osthessen">
-            Osthessen
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-mittleres-oberfranken">
-            Mittleres Oberfranken
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-region-aachen">
-            Region Aachen
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-mittleres-niederbayern">
-            Mittleres Niederbayern
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-nordpfalz">
-            Nordpfalz
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-luxemburg">
-            Lëtzebuerg
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-ticino">
-            Ticino
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-zentralschweiz">
-            Zentralschweiz
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-ostschweiz-liechtenstein">
-            Ostschweiz &amp; Liechtenstein
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-berne">
-            Berne
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-suisee-romande">
-            Suisee romande
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-graubuenden">
-            Graubünden
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-valais">
-            Valais
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-nordschweiz">
-            Nordschweiz
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-sued-oberoesterreich">
-            Süd-Oberösterreich
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox"
-              id="checkbox-suedliches-niederoesterreich">
-            Südliches Niederösterreich
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-neusiedler-see-region">
-            Neusiedler-See-Region
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox"
-              id="checkbox-noerdliches-niederoesterreich">
-            Nördliches Niederösterreich
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-west-niederoesterreich">
-            West Niederösterreich
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-grazer-umland">
-            Grazer Umland
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox"
-              id="checkbox-lechtaler-oetztaler-alpen">
-            Lechtaler &amp; Ötztaler-Alpen
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-wienerwald">
-            Wienerwald
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-salzburger-land">
-            Salzburger Land
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-nordsteiermark">
-            Nordsteiermark
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-ost-kaernten">
-            Ost-Kärnten
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-voralberg">
-            Voralberg
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox"
-              id="checkbox-nord-ost-niederoesterreich">
-            Nord-Ost-Niederösterreich
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-osttirol-westkaernten">
-            Osttirol &amp; West-Kärnten
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox"
-              id="checkbox-glockner-venediger-kitzbueheler-alpen">
-            Glockner-Venediger-Kitzbüheler-Alpen
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-suedliches-burgenland">
-            Südliches Burgenland
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-nord-oberoesterreich">
-            Nord-Oberösterreich
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-ost-oberoesterreich">
-            Ost-Oberösterreich
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-west-oberoesterreich">
-            West-Oberösterreich
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-west-steiermark">
-            West-Steiermark
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-sued-steiermark">
-            Süd-Steiermark
-          </li>
-          <li class="list-group-item">
-            <input class="region-checkbox form-check-input me-1" type="checkbox" id="checkbox-kaertner-seenland">
-            Kärtner Seenland
-          </li>
-        </ul>
-      </div>
-      <div class="order-1 order-lg-2 col-12 col-lg-6 mb-5 mb-lg-0">
-        <div id="map" class="d-flex justify-content-center">
-          <svg id="regions" version="1.0" xmlns="http://www.w3.org/2000/svg" style="height: 85vh;">
-            <g transform="scale(1, -1)">
-              %PATHS%
-            </g>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="sidebar-head">
+        <h1>Komoot Regionen</h1>
+        <p class="subtitle">Markiere deine freigeschalteten Regionen auf der Karte oder in der Liste.</p>
+        <div class="stats">
+          <strong id="stat-active">0</strong>
+          <span>von <span id="stat-total">0</span> Regionen</span>
+          <span class="percent" id="stat-percent">0 %</span>
+        </div>
+        <div class="progress" id="progress"></div>
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
           </svg>
+          <input id="search" type="search" placeholder="Region suchen…" autocomplete="off" aria-label="Region suchen">
         </div>
       </div>
-      <div class="order-3 col-6 col-lg-3">
-        <button type="button" class="btn btn-primary" onclick="exportToUrl();">Export to URL</button>
+
+      <div class="region-list" id="region-list">
+        <ul id="unsorted" hidden>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-oestlicher-hunsrueck"><span>Östlicher Hunsrück</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-mittlere-nordseekueste"><span>Mittlere Nordseeküste</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-taunus"><span>Taunus</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-saechsisches-elbland"><span>Sächsisches Elbland</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-westschwarzwald"><span>Westschwarzwald</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-bergisch-siegen"><span>Bergisch-Siegen</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-koelner-bucht"><span>Kölner Bucht</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-muenchner-umland"><span>Münchner Umland</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-ostschwarzwald"><span>Ostschwarzwald</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-mecklenburgische-seenplatte"><span>Mecklenburgische Seenplatte</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-saarland"><span>Saarland</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-augsburger-ulmer-umland"><span>Augsburger-Ulmer Umland</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-ostbayrische-alpen"><span>Ostbayrische Alpen</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-nordhessen"><span>Nordhessen</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-rostock-guestrow-demmin"><span>Rostock-Güstrow-Demmin</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-luebecker-bucht"><span>Lübecker Bucht</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-suedschwarzwald"><span>Südschwarzwald</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-noerdliches-sachsen-anhalt"><span>Nördliches Sachsen-Anhalt</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-odenwald-tauber-region"><span>Odenwald-Tauber Region</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-mittelhessen"><span>Mittelhessen</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-mittlere-saale"><span>Mittlere Saale</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-leinebergland"><span>Leinebergland</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-untere-lippe"><span>Untere Lippe</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-regensburger-donau-ebene"><span>Regensburger Donau Ebene</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-württemberger-bodensee"><span>Württemberger Bodensee</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-schwaebisch-fraenkischer-wald"><span>Schwäbisch-Fränkischer Wald</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-ostbraunschweigisches-flachland"><span>Ostbraunschweigisches Flachland</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-muensterland"><span>Münsterland</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-ostbrandenburg"><span>Ostbrandenburg</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-mittlere-weser-region"><span>Mittlere Weser Region</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-untere-ruhr"><span>Untere Ruhr</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-coburg-hassberge"><span>Coburg-Haßberge</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-suedpfalz"><span>Südpfalz</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-berlin-potsdam-havelland"><span>Berlin-Potsdam-Havelland</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-suedhessen"><span>Südhessen</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-suedliche-heide"><span>Südliche Heide</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-nuernberg-erlangen"><span>Nürnberg Erlangen</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-untere-saale"><span>Untere Saale</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-oberschwaben"><span>Oberschwaben</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-vorpommern"><span>Vorpommern</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-oberes-haveland-ueckermark"><span>Oberes Haveland-Uckermark</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-suedlicher-teutoburger-wald"><span>Südlicher Teutoburger Wald</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-rennsteig-region"><span>Rennsteig Region</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-erding-freising-schrobenhausen"><span>Erding-Freising-Schrobenhausen</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-main-region"><span>Main-Region</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-noerdlicher-teutoburger-wald"><span>Nördlicher Teutoburger-Wald</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-fuenf-seen-land"><span>Fünf-Seen-Land</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-fichtelgebirge"><span>Fichtelgebirge</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-mittelrhein"><span>Mittelrhein</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-toelzer-alpenvorland"><span>Tölzer-Alpenvorland</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-zentraleifel"><span>Zentraleifel</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-rhein-neckar-eck"><span>Rhein-Neckar-Eck</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-altmuehltal"><span>Altmühltal</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-holsteinisches-binnenland"><span>Holsteinisches Binnenland</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-region-emsland"><span>Region Emsland</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-ostfriesland"><span>Ostfriesland</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-noerdliche-heide"><span>Nördliche Heide</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-erzgebirge"><span>Erzgebirge</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-schleswig-holsteinische-ostsee"><span>Schleswig-Holsteinische Ostsee</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-passau-inn-region"><span>Passau-Inn-Region</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-fraenkische-alb"><span>Fraenkische-Alb</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-oestliche-heide"><span>Östliche Heide</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-spreewald-niederlausitz"><span>Spreewald-Niederlausitz</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-bayrischer-wald"><span>Bayrischer Wald</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-innsbrucker-garmische-alpen"><span>Innsbrucker-Garmische Alpen</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-niederrhein"><span>Niederrhein</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-harz"><span>Harz</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-nordwestsachsen"><span>Nordwestsachsen</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-schwerin-prignitz-ruppin"><span>Schwerin-Prignitz-Ruppin</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-allgaeu"><span>Allgäu</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-hochschwarzwald"><span>Hochschwarzwald</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-suedlicher-neckar"><span>Südlicher Neckar</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-wuerzburg-bad-kissingen"><span>Würzburg Bad Kissingen</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-schleswig-holsteinische-nordsee"><span>Schleswig-Holsteinische Nordsee</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-westlicher-hunsrueck"><span>Westlicher Hunsrück</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-mittleres-thueringen"><span>Mittleres Thüringen</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-bremer-hinterland"><span>Bremer Hinterland</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-frankenwald"><span>Frankenwald</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-schwaebische-alb"><span>Schwaebische Alb</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-ostschwaben"><span>Ostschwaben</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-elbe-elster-flaeming"><span>Elbe-Elster-Fläming</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-osthessen"><span>Osthessen</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-mittleres-oberfranken"><span>Mittleres Oberfranken</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-region-aachen"><span>Region Aachen</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-mittleres-niederbayern"><span>Mittleres Niederbayern</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-nordpfalz"><span>Nordpfalz</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-luxemburg"><span>Lëtzebuerg</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-ticino"><span>Ticino</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-zentralschweiz"><span>Zentralschweiz</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-ostschweiz-liechtenstein"><span>Ostschweiz &amp; Liechtenstein</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-berne"><span>Berne</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-suisee-romande"><span>Suisee romande</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-graubuenden"><span>Graubünden</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-valais"><span>Valais</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-nordschweiz"><span>Nordschweiz</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-sued-oberoesterreich"><span>Süd-Oberösterreich</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-suedliches-niederoesterreich"><span>Südliches Niederösterreich</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-neusiedler-see-region"><span>Neusiedler-See-Region</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-noerdliches-niederoesterreich"><span>Nördliches Niederösterreich</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-west-niederoesterreich"><span>West Niederösterreich</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-grazer-umland"><span>Grazer Umland</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-lechtaler-oetztaler-alpen"><span>Lechtaler &amp; Ötztaler-Alpen</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-wienerwald"><span>Wienerwald</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-salzburger-land"><span>Salzburger Land</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-nordsteiermark"><span>Nordsteiermark</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-ost-kaernten"><span>Ost-Kärnten</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-voralberg"><span>Voralberg</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-nord-ost-niederoesterreich"><span>Nord-Ost-Niederösterreich</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-osttirol-westkaernten"><span>Osttirol &amp; West-Kärnten</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-glockner-venediger-kitzbueheler-alpen"><span>Glockner-Venediger-Kitzbüheler-Alpen</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-suedliches-burgenland"><span>Südliches Burgenland</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-nord-oberoesterreich"><span>Nord-Oberösterreich</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-ost-oberoesterreich"><span>Ost-Oberösterreich</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-west-oberoesterreich"><span>West-Oberösterreich</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-west-steiermark"><span>West-Steiermark</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-sued-steiermark"><span>Süd-Steiermark</span></label></li>
+          <li><label><input class="region-checkbox" type="checkbox" id="checkbox-kaertner-seenland"><span>Kärtner Seenland</span></label></li>
+        </ul>
+        <div class="empty" id="empty" hidden>Keine Region gefunden.</div>
       </div>
-    </div>
+
+      <div class="sidebar-foot">
+        <button type="button" class="btn btn-primary" onclick="exportToUrl();">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" aria-hidden="true">
+            <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7" />
+            <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" />
+          </svg>
+          Link teilen
+        </button>
+        <button type="button" class="btn" onclick="resetRegions();" title="Auswahl zurücksetzen">Zurücksetzen</button>
+      </div>
+    </aside>
+
+    <main class="map" id="map">
+      <svg id="regions" version="1.0" xmlns="http://www.w3.org/2000/svg">
+        <g transform="scale(1, -1)">
+          %PATHS%
+        </g>
+      </svg>
+      <div class="legend" id="legend"></div>
+    </main>
   </div>
 
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js">
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
-    integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
-    crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/js-cookie@2.2.1/src/js.cookie.js">
-  </script>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-cookie@2.2.1/src/js.cookie.js"></script>
   <script>
     var activeRegions = [];
 
-    $(document).ready(function () {
-      if (window.navigator.userAgent.indexOf("MSIE ") > 0 || !!navigator.userAgent.match(/Trident.*rv\:11\./))
-        alert("For your own wellbeing, please don't use Internet Explorer")
-    });
+    var countries = [
+      { key: 'germany', name: 'Deutschland' },
+      { key: 'austria', name: 'Österreich' },
+      { key: 'switzerland', name: 'Schweiz' },
+      { key: 'luxemburg', name: 'Luxemburg' }
+    ];
 
-    $(document).ready(resizeRegions);
-    $(document).ready(loadActiveRegions);
+    $(document).ready(function () {
+      buildGroups();
+      loadActiveRegions();
+      resizeRegions();
+      updateStats();
+    });
     $(window).resize(resizeRegions);
 
-    $('.region').click(function () {
+    function countryOf(id) {
+      var g = $('#' + id);
+      for (var i = 0; i < countries.length; i++)
+        if (g.hasClass(countries[i].key)) return countries[i].key;
+    }
+
+    // Group the flat region list by country, sort it, and use the
+    // human-readable names as map tooltips.
+    function buildGroups() {
+      var list = $('#region-list');
+      var empty = $('#empty');
+      var legend = $('#legend');
+
+      countries.forEach(function (c) {
+        var section = $('<section class="group ' + c.key + '" data-country="' + c.key + '">' +
+          '<h2><span class="dot"></span>' + c.name + '<span class="count"></span></h2><ul></ul></section>');
+        section.insertBefore(empty);
+        legend.append('<span class="' + c.key + '">' + c.name + '</span>');
+        $('#progress').append('<i class="' + c.key + '" style="background: var(--c); width: 0"></i>');
+      });
+
+      var items = $('#unsorted li').get();
+      items.sort(function (a, b) {
+        return $(a).text().localeCompare($(b).text(), 'de');
+      });
+      items.forEach(function (li) {
+        var id = $(li).find('input').attr('id').replace('checkbox-', '');
+        $(li).attr('data-region', id);
+        $('#' + id + ' title').text($(li).text());
+        $('.group[data-country="' + countryOf(id) + '"] ul').append(li);
+      });
+      $('#unsorted').remove();
+      $('#stat-total').text(items.length);
+    }
+
+    $(document).on('click', '.region', function () {
       if ($(this).hasClass('active'))
         deactivate($(this).attr('id'));
       else
         activate($(this).attr('id'));
     });
-    $('.region-checkbox').change(function () {
+
+    $(document).on('change', '.region-checkbox', function () {
       if (this.checked)
         activate($(this).attr('id').replace('checkbox-', ''));
       else
         deactivate($(this).attr('id').replace('checkbox-', ''));
     });
 
+    // Highlight the counterpart in map / list on hover.
+    $(document).on('mouseenter', '.group li', function () {
+      $('#' + $(this).data('region')).addClass('hover');
+    }).on('mouseleave', '.group li', function () {
+      $('#' + $(this).data('region')).removeClass('hover');
+    });
+    $(document).on('mouseenter', '.region', function () {
+      $('.group li[data-region="' + this.id + '"]').addClass('hover');
+    }).on('mouseleave', '.region', function () {
+      $('.group li[data-region="' + this.id + '"]').removeClass('hover');
+    });
+
+    $(document).on('input', '#search', function () {
+      var q = this.value.trim().toLocaleLowerCase('de');
+      var any = false;
+      $('.group').each(function () {
+        var visible = 0;
+        $(this).find('li').each(function () {
+          var match = $(this).text().toLocaleLowerCase('de').indexOf(q) !== -1;
+          this.hidden = !match;
+          if (match) visible++;
+        });
+        this.hidden = visible === 0;
+        if (visible) any = true;
+      });
+      $('#empty').prop('hidden', any);
+    });
+
     function activate(id) {
       var e = $('#' + id);
       var uid = parseInt(e.data('uid'));
-      activeRegions.push(uid);
+      if (activeRegions.indexOf(uid) === -1)
+        activeRegions.push(uid);
       saveActiveRegions();
       e.addClass('active');
       $('#checkbox-' + id).prop('checked', true);
+      updateStats();
     }
 
     function deactivate(id) {
       var e = $('#' + id);
       var uid = parseInt(e.data('uid'));
-      activeRegions.splice(activeRegions.indexOf(uid), 1);
+      if (activeRegions.indexOf(uid) !== -1)
+        activeRegions.splice(activeRegions.indexOf(uid), 1);
       saveActiveRegions();
       e.removeClass('active');
       $('#checkbox-' + id).prop('checked', false);
+      updateStats();
+    }
+
+    function resetRegions() {
+      if (!activeRegions.length || !confirm('Alle markierten Regionen entfernen?'))
+        return;
+      activeRegions = [];
+      saveActiveRegions();
+      $('.region').removeClass('active');
+      $('.region-checkbox').prop('checked', false);
+      updateStats();
+    }
+
+    function updateStats() {
+      var total = $('.region').length;
+      var active = $('.region.active').length;
+      $('#stat-active').text(active);
+      $('#stat-percent').text(Math.round(active / total * 100) + ' %');
+      countries.forEach(function (c) {
+        var all = $('.region.' + c.key).length;
+        var on = $('.region.active.' + c.key).length;
+        $('.group[data-country="' + c.key + '"] .count').text(on + ' / ' + all);
+        $('#progress .' + c.key).css('width', (on / total * 100) + '%');
+      });
     }
 
     function saveActiveRegions() {
-      //console.log('saved')
-      //console.log(activeRegions)
-      //console.log(btoa(activeRegions))
       Cookies.set('activeRegions', btoa(activeRegions), { expires: (100 * 365), sameSite: 'strict' });
     }
 
@@ -621,9 +779,9 @@
     }
 
     function loadRegions(base64) {
-      if (base64 !== undefined) {
+      if (base64) {
         var data = atob(base64);
-        activeRegions = data.split(',').map(Number);
+        activeRegions = data ? data.split(',').map(Number) : [];
       } else {
         activeRegions = []
       }
@@ -635,21 +793,29 @@
         url = url.substring(0, url.indexOf('?'))
       var newUrl = url + '?regions=' + btoa(activeRegions);
       history.pushState({}, null, newUrl);
+
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(newUrl).then(function () {
+          showToast('Link in die Zwischenablage kopiert');
+        }, function () {
+          showToast('Link in der Adresszeile aktualisiert');
+        });
+      } else {
+        showToast('Link in der Adresszeile aktualisiert');
+      }
+    }
+
+    var toastTimer;
+    function showToast(text) {
+      $('#toast').text(text).addClass('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { $('#toast').removeClass('show'); }, 2200);
     }
 
     function resizeRegions() {
-      $("svg").hide();
-      var height = $(document).height() * 0.8;
-      $("svg").show();
-
-      var svg = $('svg')[0];
-      box = svg.getBBox(); // <- get the visual boundary required to view all children
-      viewBox = [box.x, box.y, box.width, box.height].join(" ");
-
-      // set viewable area based on value above
-      svg.setAttribute("viewBox", viewBox);
-
-      //document.getElementById('regions').style.setProperty('height', height + 'px', 'important');
+      var svg = $('#regions')[0];
+      var box = svg.getBBox(); // <- get the visual boundary required to view all children
+      svg.setAttribute("viewBox", [box.x, box.y, box.width, box.height].join(" "));
     }
   </script>
 </body>
